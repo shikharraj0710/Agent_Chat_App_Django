@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.contrib.auth.models import Group
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 
 from account.models import User
@@ -10,6 +11,7 @@ from account.forms import AddUserForm, EditUserForm
 from .models import Room
 
 
+@csrf_exempt
 @require_POST
 def create_room(request, uuid):
     name = request.POST.get("name", "")
@@ -49,19 +51,34 @@ def user_detail(request, uuid):
 
 
 @login_required
+def delete_room(request, uuid):
+    if request.user.has_perm("room.delete_room"):
+        room = Room.objects.get(uuid=uuid)
+        room.delete()
+
+        messages.success(request, "The room was deleted!")
+
+        return redirect("/chat-admin/")
+    else:
+        messages.error(request, "You don't have access to delete users!")
+
+    return redirect("/chat-admin/")
+
+
+@login_required
 def edit_user(request, uuid):
     if request.user.has_perm("user.edit_user"):
         user = User.objects.get(pk=uuid)
-        
-        if request.method == 'POST':
+
+        if request.method == "POST":
             form = EditUserForm(request.POST, instance=user)
 
             if form.is_valid():
                 form.save()
-                
-                messages.success(request, 'The changes was saved!')
-                
-                return redirect('/chat-admin/')
+
+                messages.success(request, "The changes was saved!")
+
+                return redirect("/chat-admin/")
         else:
             form = EditUserForm(instance=user)
 

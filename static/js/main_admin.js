@@ -122,3 +122,14 @@ chatInputElement.onkeyup = function (e) {
     sendMessage()
   }
 }
+
+chatInputElement.onfocus = function (e) {
+  chatSocket.send(
+    JSON.stringify({
+      type: 'update',
+      message: 'writing_active',
+      name: userName,
+      agent
+    })
+  )
+}
